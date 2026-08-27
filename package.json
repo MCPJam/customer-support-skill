@@ -1,0 +1,28 @@
+{
+  "name": "skills-over-mcp-support-demo",
+  "version": "1.0.0",
+  "private": true,
+  "type": "module",
+  "description": "E-commerce support MCP server demonstrating the SEP-2640 Skills extension over Streamable HTTP.",
+  "engines": {
+    "node": ">=20.11.0"
+  },
+  "scripts": {
+    "dev": "tsx watch src/index.ts",
+    "build": "tsc -p tsconfig.json",
+    "start": "node build/src/index.js",
+    "test": "npm run build && node --test build/tests/*.test.js",
+    "typecheck": "tsc -p tsconfig.json --noEmit"
+  },
+  "dependencies": {
+    "@modelcontextprotocol/sdk": "1.30.0",
+    "express": "^5.1.0",
+    "zod": "^4.1.13"
+  },
+  "devDependencies": {
+    "@types/express": "^5.0.3",
+    "@types/node": "^22.15.3",
+    "tsx": "^4.20.3",
+    "typescript": "^5.9.2"
+  }
+}
