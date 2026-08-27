@@ -6,17 +6,17 @@ A working e-commerce support MCP server that demonstrates **Skills over MCP**
 
 ## What Skills over MCP means
 
-An MCP server has always been able to give an agent *actions* — tools it can
-call. It has had no good way to ship the *know-how*: the workflow that says
+An MCP server has always been able to give an agent *actions*, meaning tools it
+can call. It has had no good way to ship the *know-how*: the workflow that says
 which tool to call, in what order, under which conditions, and when to stop and
 ask the user.
 
-Skills over MCP fixes that. A **skill** is a folder of Markdown — a `SKILL.md`
-plus any supporting files — that the server publishes as ordinary MCP
+Skills over MCP fixes that. A **skill** is a folder of Markdown (a `SKILL.md`
+plus any supporting files) that the server publishes as ordinary MCP
 *resources*. The agent discovers what skills a server has (`skills/list`), gets
 one skill's manifest with a SHA-256 digest and byte size for each of its files
 (`skills/get`), and then reads those files individually with the standard
-`resources/read` — pulling in the deep detail only at the moment it needs it.
+`resources/read`, pulling in the deep detail only at the moment it needs it.
 That last part is **progressive disclosure**: the agent loads `SKILL.md` when it
 starts handling a refund, and only reads `refund-policy.md` when it actually has
 to check an eligibility rule.
@@ -53,22 +53,29 @@ results. This server implements the newer PR-head shape.
 The suggested fallback baseline `d7490ecd1a250f7bc8c3ebb0d65450dfec274bad` was
 **not** used, since a newer revision resolved.
 
-**SEP-2640 is still a Draft and is evolving.** This demo follows the version
-available at implementation time (2026-08-27). If the spec has moved on, the
-method names, field names, or capability shape below may no longer match.
+**SEP-2640 is still evolving.** The SEP document's own header reads
+`Status: Draft`, while the [Skills Over MCP WG charter](https://modelcontextprotocol.io/community/skills-over-mcp/charter)
+lists the Skills Extension SEP as **In Review**, championed by
+[@pja-ant](https://github.com/pja-ant). This demo follows the version available
+at implementation time (2026-08-27). If the spec has moved on, the method names,
+field names, or capability shape below may no longer match.
+
+Both commit SHAs above were checked against the GitHub API on 2026-08-27 and
+resolve to real commits (`a3e147ca` dated 2026-08-25, `9f55cd34` dated
+2026-08-05), with the linked spec files returning content at each.
 
 ### What this implements
 
 - Capability declaration in `initialize`:
   `capabilities.extensions["io.modelcontextprotocol/skills"] = { "directoryRead": true }`
-- `skills/list` — paginated (opaque base64url cursor), returns complete skill
+- `skills/list`: paginated (opaque base64url cursor), returns complete skill
   entries with verbatim `frontmatter` and a full `resources` manifest.
-- `skills/get` — returns one skill's entry by URI; `-32602` for a URI the server
+- `skills/get`: returns one skill's entry by URI; `-32602` for a URI the server
   does not serve as a skill.
-- `resources/directory/read` — the optional directory-listing method, gated
+- `resources/directory/read`: the optional directory-listing method, gated
   behind the `directoryRead` setting.
-- `resources/read` — serves skill files with correct MIME types.
-- `resources/list` — resource metadata for each skill file; `SKILL.md` takes its
+- `resources/read`: serves skill files with correct MIME types.
+- `resources/list`: resource metadata for each skill file; `SKILL.md` takes its
   `name` and `description` from the frontmatter, per the SEP's Resource Metadata
   section.
 - URI convention `skill://<skill-name>/<file-path>`, with the final skill-path
@@ -122,7 +129,7 @@ Start the server, then in MCPJam add a server with:
 - **Transport:** Streamable HTTP
 - **URL:** `http://localhost:3001/mcp`
 
-That is the whole configuration — no headers, no auth. A health endpoint is at
+That is the whole configuration: no headers, no auth. A health endpoint is at
 `http://localhost:3001/healthz` if you want to confirm the process is up first.
 
 The transport runs **stateless**: every POST is handled independently and no
@@ -174,8 +181,8 @@ call '{"jsonrpc":"2.0","id":7,"method":"resources/read","params":{"uri":"skill:/
 ```
 
 Only URIs that appear in a skill's manifest resolve. A traversal attempt, an
-undeclared file, or a `file://` URI misses the manifest map and is rejected —
-no filesystem path is ever built from client input.
+undeclared file, or a `file://` URI misses the manifest map and is rejected.
+No filesystem path is ever built from client input.
 
 ## Test in the MCPJam Playground
 
@@ -271,8 +278,9 @@ escalation.
 
 ### Manual test: confirmation gating
 
-The server cannot enforce or verify that the agent asked for confirmation — the
-tool has no way to know what the agent said. That rule lives in `SKILL.md` and
+The server cannot enforce or verify that the agent asked for confirmation,
+because the tool has no way to know what the agent said. That rule lives in
+`SKILL.md` and
 must be checked by hand in the Playground:
 
 - For `order_1042` and `order_5230`, confirm the assistant does **not** call
@@ -330,11 +338,14 @@ results never change with the wall clock.
   the base protocol's list-caching attributes ([SEP-2549]) in protocol versions
   **2026-07-28 and later**. The SDK's latest supported version is `2025-11-25`,
   so that version cannot be negotiated and those fields are omitted rather than
-  faked.
+  faked. Verify in one command:
+  `grep PROTOCOL_VERSION node_modules/@modelcontextprotocol/sdk/dist/esm/types.js`,
+  which prints `LATEST_PROTOCOL_VERSION = '2025-11-25'` and a
+  `SUPPORTED_PROTOCOL_VERSIONS` list containing nothing later.
 - **`resultType: "complete"` is emitted on a best-effort basis.** It appears in
   every `skills/list`, `skills/get`, and `resources/directory/read` example in
   the current PR text, but the SEP does not define its semantics in its own
-  field tables — it comes from the base protocol. The value is set to
+  field tables, since it comes from the base protocol. The value is set to
   `"complete"` because this server enumerates its whole catalog.
 - **The `"resources": "dynamic"` form is not exercised.** This server's skill is
   static and always publishes a full manifest with digests and sizes.
@@ -345,7 +356,7 @@ results never change with the wall clock.
 - **YAML frontmatter parsing is a deliberate subset.** `src/skills.ts` parses
   top-level scalars and one level of nesting (enough for `name`, `description`,
   `license`, `metadata.*`) and throws on anything else, rather than risk
-  publishing `frontmatter` that differs from the file — which the SEP forbids.
+  publishing `frontmatter` that differs from the file, which the SEP forbids.
 
 ### Ambiguities encountered
 
@@ -379,7 +390,7 @@ Use the `call()` helper above.
 Confirm the `initialize` response carries
 `capabilities.extensions["io.modelcontextprotocol/skills"]`. If it does and
 MCPJam still shows nothing, the client is likely on an older or newer SEP-2640
-revision than the one pinned above — the method names and field shapes have
+revision than the one pinned above. The method names and field shapes have
 changed more than once during the draft.
 
 **`-32602` reading a skill file.**
@@ -388,7 +399,7 @@ against `skills/get`; the path is case-sensitive and there is no trailing slash
 on directory URIs.
 
 **`Cannot find module` after `npm start`.**
-Run `npm run build` first — `npm start` runs the compiled output in `build/`.
+Run `npm run build` first, since `npm start` runs the compiled output in `build/`.
 
 **Type errors on install.**
 The project pins `@modelcontextprotocol/sdk@1.30.0` and uses Zod v4, which is
